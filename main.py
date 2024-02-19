@@ -16,11 +16,13 @@ workout_counts_json_file_path = "workout_counts.json"
 
 if os.path.exists(workout_json_file_path):
   workout_df = pd.read_json(workout_json_file_path)
+  workout_df['created_at'] = workout_df['created_at'].dt.tz_localize('UTC')
+  workout_df['created_at'] = workout_df['created_at'].dt.tz_convert('US/Eastern')
+
   workout_counts_df = pd.read_json(workout_counts_json_file_path, orient='index')
   workout_counts_df.reset_index(inplace=True)
   workout_counts_df.columns = ['Type', 'Count']
-  workout_df['created_at'] = workout_df['created_at'].dt.tz_localize('UTC')
-  workout_df['created_at'] = workout_df['created_at'].dt.tz_convert('US/Eastern')
+
 else:
     st.write("Lol where's the jsons")
 
@@ -32,6 +34,7 @@ def padding_fivepx():
 timezone = pytz.timezone('US/Eastern')
 current_date = datetime.now(timezone).date()
 midnight_datetime = timezone.localize(datetime.combine(current_date, datetime.min.time()))
+
 past_year_date = current_date - timedelta(days=365)
 past_year_datetime = timezone.localize(datetime.combine(past_year_date, datetime.min.time()))
 past_year_df = workout_df[workout_df['created_at'] > past_year_datetime]
@@ -167,7 +170,8 @@ with st.container():
 #Container 3
 with st.container():
 
-    #Github-like year calendar
+    #Github-like year calendar:
+    #past_year_df created in backend loading section towards the top 
     past_year_df = past_year_df.copy() 
     past_year_df['date'] = past_year_df['created_at'].dt.date.astype(str)
 
@@ -175,7 +179,7 @@ with st.container():
     daily_total_distance = past_year_df.groupby('date')['distance'].sum().reset_index()
     daily_total_distance['date'] = pd.to_datetime(daily_total_distance['date'])
 
-    ###OFFSET:
+    ###OFFSET DATES CODE:
     # daily_total_distance['date'] += pd.Timedelta(days=1) #adding an offset for display
 
     # Create the Altair chart with tooltips
@@ -196,7 +200,7 @@ with st.container():
     )
     st.altair_chart(chart, use_container_width=True)
 
-##test
+##test area
 # st.write(daily_total_distance)
 # print(daily_total_distance.dtypes)
 
