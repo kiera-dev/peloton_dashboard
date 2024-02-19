@@ -8,7 +8,7 @@ import seaborn as sns
 from datetime import datetime,timedelta
 
 
-# Backend Loading
+#### Backend Loading ####
 
 # Load Json
 workout_json_file_path = "workout_data.json"
@@ -180,7 +180,7 @@ with st.container():
     daily_total_distance['date'] = pd.to_datetime(daily_total_distance['date'])
 
     ###OFFSET DATES CODE:
-    # daily_total_distance['date'] += pd.Timedelta(days=1) #adding an offset for display
+    # daily_total_distance['date'] += pd.Timedelta(days=1) #add an offset for display
 
     # Create the Altair chart with tooltips
     chart = alt.Chart(daily_total_distance, title="Daily Total Distance Covered").mark_rect().encode(
