@@ -1,4 +1,4 @@
-import duckdb,os,time,pytz,json,io
+import duckdb,os,time,pytz,json
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,38 +7,26 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from pprint import pprint
 from datetime import datetime,timedelta
-from google.cloud import storage
 from peloton_client import peloton_client
 
 ################# Backend Loading #################
 
-#Load GCS Jsons
-storage_client = storage.Client()
-json_bucket = "streamlit-peloton-bucket"
-bucket = storage_client.bucket(json_bucket)
+# Load Json
+workout_json_file_path = "workout_data.json"
+workout_counts_json_file_path = "workout_counts.json"
 
-# Define files in GCS
-workout_json_blob = bucket.blob("workout_data.json")
-workout_counts_json_blob = bucket.blob("workout_counts.json")
+if os.path.exists(workout_json_file_path):
+  workout_df = pd.read_json(workout_json_file_path)
+  workout_df['created_at'] = workout_df['created_at'].dt.tz_localize('UTC')
+  workout_df['created_at'] = workout_df['created_at'].dt.tz_convert('US/Eastern')
+  print(workout_df.dtypes)
+  print(workout_df.info())
 
-# Read JSON files from GCS
-if workout_json_blob.exists() and workout_counts_json_blob.exists():
+  workout_counts_df = pd.read_json(workout_counts_json_file_path, orient='index')
+  workout_counts_df.reset_index(inplace=True)
+  workout_counts_df.columns = ['Type', 'Count']
 
-    #Handling workout data
-    workout_json_data = json.loads(workout_json_blob.download_as_string())
-    workout_df = pd.DataFrame(workout_json_data)
-    workout_df['created_at'] = pd.to_datetime(workout_df['created_at'], unit='s')
-    workout_df['created_at'] = workout_df['created_at'].dt.tz_localize('UTC').dt.tz_convert('US/Eastern')
-    
-    #Handling workout counts
-    workout_counts_json_data = json.loads(workout_counts_json_blob.download_as_string())
-    json_buffer = io.BytesIO(workout_counts_json_blob.download_as_string())
-    workout_counts_df = pd.read_json(json_buffer, orient='index')
-    workout_counts_df.reset_index(inplace=True)
-    workout_counts_df.columns = ['Type', 'Count']
 
-    # print(workout_df.dtypes)
-    # print(workout_df.info())
 else:
     st.write("Lol where's the jsons")
 
@@ -59,7 +47,6 @@ past_year_df = workout_df[workout_df['created_at'] > past_year_datetime]
 username = st.secrets["peloton"]["username"]
 password = st.secrets["peloton"]["password"]
 client = peloton_client.PelotonClient(username=username, password=password)
-
 def extract_data(input_data):
     output_dict = {}
     for x in input_data:
@@ -126,42 +113,63 @@ def get_user_overview(overview):
 
 def get_peloton_data():
     workout_data_file_path = "workout_data.json"
-    #defined above:
-    # workout_json_blob = bucket.blob("workout_data.json")
-    # workout_counts_json_blob = bucket.blob("workout_counts.json")
 
-    try:
-        print("getting latest data")
-        workouts = client.fetch_workouts()
-        workouts_data = get_workout_data(workouts)
-
-        existing_data = json.loads(workout_json_blob.download_as_string())
-        latest_timestamp = max(entry['created_at'] for entry in existing_data)
-        new_workout_data = [data for data in workouts_data if data['created_at'] > latest_timestamp]
-
-        if new_workout_data:
-            # Update existing workout data
-            existing_data.extend(new_workout_data)
-            existing_data.sort(key=lambda x: x['created_at'])
-            latest_timestamp = max(entry['created_at'] for entry in existing_data)
-
-            # Upload the updated JSON back to the blob
-            workout_json_blob.upload_from_string(json.dumps(existing_data), content_type="application/json")
-
-            print("New data appended")
+    try:        
+        # Check if workout_data.json exists
+        if not os.path.isfile(workout_data_file_path):
+            print("getting all data")
+            # Fetch all workout data if workout_data.json doesn't exist
+            workouts = client.fetch_workouts(fetch_all=True)
         else:
-            print("No new data")
+            # Otherwise, fetch limited workout data
+            print("getting latest data")
+            workouts = client.fetch_workouts()
 
+        workouts_data = get_workout_data(workouts)
 
         # Grab workout counts
         overview = client.fetch_user_overview()
         overview_data = get_user_overview(overview)
-        overview_json_string = json.dumps(overview_data)
-        workout_counts_json_blob.upload_from_string(overview_json_string, content_type="application/json")
 
+        # Write workout counts to json
+        workout_counts_file_path = "workout_counts.json"
+        with open(workout_counts_file_path, "w") as json_file:
+            json.dump(overview_data, json_file)
+
+        # If workout_data.json doesn't exist, write all workout data to the file
+        if not os.path.isfile(workout_data_file_path):
+            with open(workout_data_file_path, "w") as json_file:
+                json.dump(workouts_data, json_file)
+        else:
+            # Read existing workout_data JSON 
+            with open('workout_data.json', 'r') as json_file:
+                existing_data = json.load(json_file)
+                
+            #Get timestamp of most recent workout
+            latest_timestamp = max(entry['created_at'] for entry in existing_data)
+            print(latest_timestamp)
+
+            # Retrieve new workout data & update workout_data json
+            new_workout_data = [data for data in workouts_data if data['created_at'] > latest_timestamp]
+
+            if new_workout_data:
+                existing_data.extend(new_workout_data)
+                existing_data.sort(key=lambda x: x['created_at'])
+                latest_timestamp = max(entry['created_at'] for entry in existing_data)
+
+                # Save the updated JSON back to the file
+                with open('workout_data.json', 'w') as json_file:
+                    json.dump(existing_data, json_file, indent=4)
+
+                print("New data appended if any.")
+            else:
+                print("No new data")
 
     except Exception as e:
         print(f"error: {e}")
+
+
+
 
 
 ################# Frontend #################
@@ -179,7 +187,7 @@ if get_data_button:
     # Display the fetched data
     st.write("Data updated")
 
-# st.dataframe(workout_df)
+st.dataframe(workout_df)
 
 # Container 1
 with st.container():
@@ -273,6 +281,8 @@ with st.container():
             # title='Distance by Month and Year'  # Set the title of the chart
         )
         st.altair_chart(chart, use_container_width=True)
+
+
 
 
 
