@@ -29,7 +29,7 @@ jobs:
         run: gcloud auth configure-docker --quiet
 
       - name: Set up GCS Service Account Key
-        run: cat "${{ secrets.GCS_SA }}" > keyfile.json
+        run: echo ${{ secrets.GCS_SA }} > keyfile.json
 
       - name: Validate JSON syntax
         run: jq empty keyfile.json || exit 1
