@@ -6,7 +6,7 @@
 
 FROM python:3.9
 
-EXPOSE 80
+EXPOSE 8051
 
 WORKDIR /app
 
@@ -28,7 +28,7 @@ COPY . .
 # Set Google Cloud credentials environment variable
 ENV GOOGLE_APPLICATION_CREDENTIALS="/app/keyfile.json"
 
-CMD ["streamlit", "run", "main.py"]
+CMD ["streamlit", "run", "main.py", "--server.port=8051"]
 
 
 # fyi local cmds: 
