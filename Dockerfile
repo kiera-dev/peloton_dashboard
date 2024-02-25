@@ -6,6 +6,8 @@
 
 FROM python:3.9
 
+EXPOSE 80
+
 WORKDIR /app
 
 # Install Google Cloud SDK
