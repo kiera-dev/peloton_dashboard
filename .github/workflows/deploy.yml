@@ -21,7 +21,7 @@ jobs:
           service_account: ${{ secrets.GCP_SA_ID }}
 
       - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v0
+        uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
@@ -42,6 +42,6 @@ jobs:
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v1
         with:
-          image: gcr.io/${{ secrets.GCP_PROJECT_ID }}/streamlit-peloton-image:latest
+          image: gcr.io/${{ secrets.GCP_PROJECT_ID }}/streamlit-peloton:latest
           service: streamlit-peloton-service
           region: ${{ secrets.GCP_REGION }}
