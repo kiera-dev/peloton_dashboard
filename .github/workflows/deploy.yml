@@ -31,6 +31,9 @@ jobs:
       - name: Set up GCS Service Account Key
         run: echo "${{ secrets.GCS_SA }}" > keyfile.json
 
+      - name: Validate JSON syntax
+        run: jq empty keyfile.json || exit 1
+
       - name: Build and Push Docker image
         run: |
           docker build \
