@@ -58,8 +58,8 @@ past_year_df = workout_df[workout_df['created_at'] > past_year_datetime]
 ################get peloton api data######################
 username = os.getenv("PELOTON_USERNAME")
 password = os.getenv("PELOTON_PASSWORD")
-if username is None or password is None:
-    raise ValueError("Peloton username or password is not provided. Please set PELOTON_USERNAME and PELOTON_PASSWORD environment variables.")
+# if username is None or password is None:
+#     raise ValueError("Peloton username or password is not provided. Please set PELOTON_USERNAME and PELOTON_PASSWORD environment variables.")
 
 client = peloton_client.PelotonClient(username=username, password=password)
 
