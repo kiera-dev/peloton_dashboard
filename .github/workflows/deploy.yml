@@ -1,0 +1,47 @@
+name: Deploy to Cloud Run
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON }}
+          service_account: ${{ secrets.GCP_SA_ID }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Configure Docker authentication
+        run: gcloud auth configure-docker --quiet
+
+      - name: Set up GCS Service Account Key
+        run: echo "${{ secrets.GCS_SA }}" > keyfile.json
+
+      - name: Build and Push Docker image
+        run: |
+          docker build \
+            --build-arg PELOTON_USERNAME=${{ secrets.PELOTON_USERNAME }} \
+            --build-arg PELOTON_PASSWORD=${{ secrets.PELOTON_PASSWORD }} \
+            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/streamlit-peloton:latest .
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/streamlit-peloton:latest
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v0
+        with:
+          image: gcr.io/${{ secrets.GCP_PROJECT_ID }}/streamlit-peloton-image:latest
+          service: streamlit-peloton-service
+          region: ${{ secrets.GCP_REGION }}
