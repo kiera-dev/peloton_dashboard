@@ -7,6 +7,9 @@
 FROM python:3.9
 EXPOSE 8080
 
+ENV PELOTON_USERNAME=${PELOTON_USERNAME} \
+    PELOTON_PASSWORD=${PELOTON_PASSWORD}
+
 WORKDIR /app
 
 # Install Google Cloud SDK
@@ -29,6 +32,8 @@ ENV GOOGLE_APPLICATION_CREDENTIALS="/app/keyfile.json"
 
 
 CMD ["streamlit", "run", "main.py", "--server.port=8080", "--server.address=0.0.0.0"]
+
+
 # ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8080", "--server.address=0.0.0.0"]
 
 
