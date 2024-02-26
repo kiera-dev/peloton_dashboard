@@ -56,14 +56,17 @@ past_year_datetime = timezone.localize(datetime.combine(past_year_date, datetime
 past_year_df = workout_df[workout_df['created_at'] > past_year_datetime]
 
 ################get peloton api data######################
-username = os.getenv("PELOTON_USERNAME")
-password = os.getenv("PELOTON_PASSWORD")
-if username is None or password is None:
-    print(username)
-    raise ValueError("Peloton username or password is not provided. Please set PELOTON_USERNAME and PELOTON_PASSWORD environment variables.")
+peloton_username = os.getenv("PELOTON_USERNAME")
+peloton_password = os.getenv("PELOTON_PASSWORD")
+print(f"Username: {peloton_username}")  # Print the values for debugging
 
-client = peloton_client.PelotonClient(username=username, password=password)
+# Check if username or password is missing
+if peloton_username is None or peloton_password is None:
+    print("Peloton username or password is not provided.")
+    print(f"Username: {peloton_username}")  # Print the values for debugging
+    raise ValueError("Please set PELOTON_USERNAME and PELOTON_PASSWORD environment variables.")
 
+client = peloton_client.PelotonClient(username=peloton_username, password=peloton_password)
 def extract_data(input_data):
     output_dict = {}
     for x in input_data:
