@@ -1,14 +1,10 @@
-#ARG PELOTON_USERNAME
-#ARG PELOTON_PASSWORD
-
-#ENV PELOTON_USERNAME=$PELOTON_USERNAME
-#ENV PELOTON_PASSWORD=$PELOTON_PASSWORD
-
 FROM python:3.9
 EXPOSE 8080
 
+# Set environment variables directly
 ENV PELOTON_USERNAME=${PELOTON_USERNAME} \
-    PELOTON_PASSWORD=${PELOTON_PASSWORD}
+    PELOTON_PASSWORD=${PELOTON_PASSWORD} \
+    GOOGLE_APPLICATION_CREDENTIALS="/app/keyfile.json"
 
 WORKDIR /app
 
@@ -27,11 +23,8 @@ RUN pip install -r requirements.txt
 # Copy application files
 COPY . .
 
-# Set Google Cloud credentials environment variable
-ENV GOOGLE_APPLICATION_CREDENTIALS="/app/keyfile.json"
-
-
 CMD ["streamlit", "run", "main.py", "--server.port=8080", "--server.address=0.0.0.0"]
+
 
 
 # ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8080", "--server.address=0.0.0.0"]
